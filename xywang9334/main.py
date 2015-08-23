@@ -18,6 +18,7 @@ import webapp2
 import jinja2
 import os
 import json
+import check
 
 import database.user
 
@@ -58,15 +59,30 @@ class WelcomeHandler(BaseHandler):
     def get(self):
         self.render("welcome.html")
 
+class RegisterHandler(BaseHandler):
+    def get(self):
+        self.render("register.html")
+    def post(self):
+        username = self.request.get("username")
+        password = self.request.get("password")
+
+        p = check.valid_password(password)
+        u = check.valid_username(username)
+
+        if p and u and ve:
+            self.redirect('/')
+        else:
+            u = User(name = username, hash_pw = password)
+            u.put()
+            self.render("register.html", username = username, email = email)
+
 
 class LoginHandler(BaseHandler):
     def get(self):
         self.render("login.html")
     def post(self):
 
-        # TODO: Add valid username check
         user_name = self.request.get("username")
-        # TODO: Add valid password check
         password = self.request.get("password")
 
         u = User.login(user_name, password)
@@ -78,8 +94,15 @@ class LoginHandler(BaseHandler):
             msg = "invalid login"
             self.render('login.html', error = msg, username = user_name)
 
+class WikiPost(BaseHandler):
+    def get(self):
+        self.render("wiki.html")
+
+
 
 app = webapp2.WSGIApplication([
     ('/', WelcomeHandler),
-    ('/login', LoginHandler)
+    ('/login', LoginHandler),
+    ('/register', RegisterHandler),
+    ('/postpage', WikiPost)
 ], debug=True)

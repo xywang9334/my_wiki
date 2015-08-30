@@ -20,7 +20,10 @@ import os
 import json
 import check
 
-import database.user
+from database.user import User
+from database.user import Post
+
+from google.appengine.api import memcache
 
 template_dir = os.path.join(os.path.dirname(__file__), 'template')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
@@ -30,6 +33,14 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
+
+def cache_func(username, update = False):
+    key = 'top'
+    posts = memcache.get(key)
+    if posts is None or update:
+        posts = db.GqlQuery("select * from Posts order by created desc")
+        b = list(posts)
+        memcache.set(key, b)
 
 class BaseHandler(webapp2.RequestHandler):
     def render(self, template, **kw):
@@ -97,6 +108,14 @@ class LoginHandler(BaseHandler):
 class WikiPost(BaseHandler):
     def get(self):
         self.render("wiki.html")
+    def post(self):
+        title = self.request.get("title")
+        description = self.request.get("description")
+        content = self.request.get("content")
+        if title and description and content:
+            p = Post(title = title, description = description, content = content)
+            p.put()
+
 
 
 
